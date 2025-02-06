@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Skin Cancer Classification using Deep Learning
 ## [:film_projector: Presentation Link](https://youtu.be/OEcFbeO88fQ) | [:pencil2:How to use the tool](https://youtu.be/60tc351UIxw)
 
@@ -377,3 +378,7 @@ Qishen, H., Bo, L., Fuxu L. (2020). Identifying Melanoma Images using EfficientN
 
 # Credits
 This project cannot be completed without you guys **Yogesh Babu Krishnakumar** [@github/13505538-Yogesh](https://github.com/13505538-Yogesh) and **Wilson Lukmanjaya** [@github/WLukmanjaya](https://github.com/WLukmanjaya). Thanks for your support :D
+=======
+# DermoLight
+Standalone Dermatoscopic device with early melanoma detection.
+>>>>>>> 3fd6c4d84b4609715d55d7a82018c51b9db08803
