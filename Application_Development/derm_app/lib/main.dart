@@ -1,6 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(MyApp());
 }
 
@@ -32,6 +40,7 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void dispose() {
@@ -40,15 +49,23 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
-  void _signIn() {
+  void _signIn() async {
     String username = _usernameController.text;
     String password = _passwordController.text;
-    // Simple validation logic
+
     if (username.isNotEmpty && password.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => WelcomeScreen()),
-      );
+      try {
+        await _auth.signInWithEmailAndPassword(
+            email: username, password: password);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => WelcomeScreen()),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sign In Failed: ${e.toString()}')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please enter both username and password')),
@@ -96,10 +113,8 @@ class _SignInScreenState extends State<SignInScreen> {
                     style: TextStyle(color: Colors.white),
                     controller: _usernameController,
                     decoration: InputDecoration(
-                      //filled: true,
-                      //fillColor: Colors.white,
                       border: OutlineInputBorder(),
-                      labelText: 'Username',
+                      labelText: 'Email',
                       labelStyle: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -155,6 +170,8 @@ class CreateAccount extends StatefulWidget {
 class _CreateAccountState extends State<CreateAccount> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void dispose() {
@@ -163,15 +180,48 @@ class _CreateAccountState extends State<CreateAccount> {
     super.dispose();
   }
 
-  void _createAccount() {
+  void _createAccount() async {
     String username = _usernameController.text;
     String password = _passwordController.text;
-    // Simple validation logic
+
+    // Regular expression for password validation (including special character)
+    RegExp passwordRegExp = RegExp(
+      r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]_-)[A-Za-z\d!@#$%^&*(),.?":{}|<>_-]{8,}$',
+    );
+
     if (username.isNotEmpty && password.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => SignInScreen()),
-      );
+      if (!passwordRegExp.hasMatch(password)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character.')),
+        );
+        return;
+      }
+
+      try {
+        UserCredential userCredential =
+            await _auth.createUserWithEmailAndPassword(
+          email: username,
+          password: password,
+        );
+
+        // Add user data to Firestore
+        await _firestore.collection('users').doc(userCredential.user?.uid).set({
+          'email': username,
+          'password': password,
+          'created_at': FieldValue.serverTimestamp(),
+        });
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SignInScreen()),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Account Creation Failed: ${e.toString()}')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please enter both username and password')),
@@ -195,7 +245,7 @@ class _CreateAccountState extends State<CreateAccount> {
               controller: _usernameController,
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
-                labelText: 'Username',
+                labelText: 'Email',
               ),
             ),
           ),
