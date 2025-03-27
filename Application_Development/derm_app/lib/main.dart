@@ -345,6 +345,10 @@ class WelcomeScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(context); // Close the drawer
                   // Navigate to History/Library screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HistoryScreen()),
+                  );
                 },
               ),
               ListTile(
@@ -353,6 +357,11 @@ class WelcomeScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(context); // Close the drawer
                   // Navigate to Verification Page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => VerificationScreen()),
+                  );
                 },
               ),
             ],
@@ -371,12 +380,12 @@ class WelcomeScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 // Navigate to the Learn Screen
-                Navigator.push(
+                /*Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => LearnScreen()),
-                );
+                );*/
               },
-              child: Text('+ Add a Device'),
+              child: Text('Connect to Device'),
             ),
           ],
         ),
@@ -455,7 +464,8 @@ class SettingsScreen extends StatelessWidget {
                     // Handle Account info button press
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => SettingsScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => AccountInfoScreen()),
                     );
                   },
                   style: OutlinedButton.styleFrom(
@@ -477,10 +487,10 @@ class SettingsScreen extends StatelessWidget {
                 height: 30, // Make it square
                 child: OutlinedButton(
                   onPressed: () {
-                    // Handle Account info button press
+                    // Handle App info button press
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => SettingsScreen()),
+                      MaterialPageRoute(builder: (context) => AppInfoScreen()),
                     );
                   },
                   style: OutlinedButton.styleFrom(
@@ -502,7 +512,7 @@ class SettingsScreen extends StatelessWidget {
                 height: 30, // Make it square
                 child: OutlinedButton(
                   onPressed: () {
-                    // Handle Account info button press
+                    // Handle Log Out button press
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => SignInScreen()),
@@ -525,6 +535,145 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class HistoryScreen extends StatelessWidget {
+  const HistoryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('History'),
+        centerTitle: true,
+      ),
+    );
+  }
+}
+
+class VerificationScreen extends StatelessWidget {
+  const VerificationScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Verify'),
+        centerTitle: true,
+      ),
+    );
+  }
+}
+
+class AccountInfoScreen extends StatelessWidget {
+  const AccountInfoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    User? user = FirebaseAuth.instance.currentUser;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Account'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: user != null
+            ? SingleChildScrollView(
+                child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Divider(
+                    color: Colors.black, // Line color
+                    thickness: 1, // Line thickness
+                  ),
+                  SizedBox(
+                    width:
+                        MediaQuery.of(context).size.width, // Full screen width
+                    height: 30, // Make it square
+                    child: Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween, // Pushes text apart
+                      children: [
+                        Text("Email:",
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)), // Left side
+                        Text(user.email ?? "Not available",
+                            style: TextStyle(fontSize: 18)), // Right side
+                      ],
+                    ),
+                  ),
+                  Divider(
+                    color: Colors.black, // Line color
+                    thickness: 1, // Line thickness
+                  ),
+                  SizedBox(
+                    width:
+                        MediaQuery.of(context).size.width, // Full screen width
+                    height: 30, // Make it square
+                    child: Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween, // Pushes text apart
+                      children: [
+                        Text("User ID:",
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)), // Left side
+                        Text(user.uid,
+                            style: TextStyle(fontSize: 18)), // Right side
+                      ],
+                    ),
+                  ),
+                  Divider(
+                    color: Colors.black, // Line color
+                    thickness: 1, // Line thickness
+                  ),
+                  /*SizedBox(
+                width: MediaQuery.of(context).size.width, // Full screen width
+                height: 30, // Make it square
+                child: OutlinedButton(
+                  onPressed: () {
+                    // Handle Log Out button press
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => SignInScreen()),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.transparent, width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero, // No rounded corners
+                    ),
+                    padding: EdgeInsets.zero, // Full width, custom height
+                  ),
+                  child: Text('Log Out'),
+                ),
+              ),
+              Divider(
+                color: Colors.black, // Line color
+                thickness: 1, // Line thickness
+              ),*/
+                ],
+              ))
+            : Text("No user is logged in"),
+      ),
+    );
+  }
+}
+
+class AppInfoScreen extends StatelessWidget {
+  const AppInfoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('App Info'),
+        centerTitle: true,
       ),
     );
   }
