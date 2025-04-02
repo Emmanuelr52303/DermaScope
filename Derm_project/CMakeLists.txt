@@ -1,13 +1,10 @@
-# Generated Cmake Pico project file
+# Generated CMake Pico project file
 
 cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# Initialise pico_sdk from installed location
-# (note this can come from environment, CMake cache etc)
 
 # == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
 if(WIN32)
@@ -34,14 +31,19 @@ project(Derm_project C CXX ASM)
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
-
 add_executable(Derm_project Derm_project.c )
 
 pico_set_program_name(Derm_project "Derm_project")
 pico_set_program_version(Derm_project "0.1")
 
-# Generate PIO header
+# Generate PIO header (if using PIO)
 pico_generate_pio_header(Derm_project ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+
+# Enable USB Host Mode in TinyUSB
+add_compile_definitions(CFG_TUH_ENABLED=1)
+
+# Enable debugging output for USB (optional)
+add_compile_definitions(CFG_TUSB_DEBUG=2)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(Derm_project 1)
@@ -49,21 +51,31 @@ pico_enable_stdio_usb(Derm_project 0)
 
 # Add the standard library to the build
 target_link_libraries(Derm_project
-        pico_stdlib)
-
-# Add the standard include files to the build
-target_include_directories(Derm_project PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}
+        pico_stdlib
+        tinyusb_host  # ✅ Ensures TinyUSB Host Mode is included
+        pico_usb_host
 )
 
-# Add any user requested libraries
+# Add TinyUSB's include directory (important!)
+target_include_directories(Derm_project PRIVATE
+    ${PICO_SDK_PATH}/lib/tinyusb/src
+    ${CMAKE_CURRENT_LIST_DIR}
+)
+
+# Add any user-requested libraries
 target_link_libraries(Derm_project 
-        hardware_i2c
-        hardware_dma
-        hardware_pio
-        hardware_interp
-        
-        )
+    pico_stdlib
+    hardware_i2c
+    hardware_dma
+    hardware_pio
+    hardware_interp
+)
 
+# Manually add TinyUSB's required sources (ensures Host Mode works properly)
+target_sources(Derm_project PRIVATE
+    ${PICO_SDK_PATH}/lib/tinyusb/src/portable/raspberrypi/rp2040/dcd_rp2040.c
+    ${PICO_SDK_PATH}/lib/tinyusb/src/tusb.c
+)
+
+# Generate extra outputs (UF2, bin, etc.)
 pico_add_extra_outputs(Derm_project)
-
