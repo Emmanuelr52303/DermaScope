@@ -14,7 +14,7 @@ import Mask.model as modellib
 import Mask.visualize as visualize
 
 # Set paths for the trained model
-MODEL_PATH = "models/mask_rcnn_moles_0090.h5"  # Update this with your actual model path
+MODEL_PATH = r"C:\Users\dipen\Documents\St.Marys\Super_Senior\Senior_Design\MachineLearning\Skin-Cancer-Segmentation-master\models\moles20250228T2328\mask_rcnn_moles_0090.h5"  # Update this with your actual model path
 
 # Verify if model exists
 if not os.path.exists(MODEL_PATH):
@@ -78,5 +78,5 @@ def classify_image(image_path):
     visualize.display_instances(img_resized, results['rois'], results['masks'], results['class_ids'], class_names, results['scores'])
 
 # Example Usage: Change to your image path
-image_path = "path/to/your/mole_image.jpg"
+image_path = r"C:\Users\dipen\Documents\St.Marys\Super_Senior\Senior_Design\MachineLearning\Skin-Cancer-Segmentation-master\ISIC-Archive-Downloader-2017\Data\Test\Single\IMG_9420.jpeg"
 classify_image(image_path)
