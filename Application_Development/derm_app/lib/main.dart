@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
+import 'package:flutter_blue/flutter_blue.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -380,10 +381,10 @@ class WelcomeScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 // Navigate to the Learn Screen
-                /*Navigator.push(
+                Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => LearnScreen()),
-                );*/
+                  MaterialPageRoute(builder: (context) => BluetoothScreen()),
+                );
               },
               child: Text('Connect to Device'),
             ),
@@ -446,95 +447,89 @@ class SettingsScreen extends StatelessWidget {
         title: Text('Settings'),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Divider(
-                color: Colors.black, // Line color
-                thickness: 1, // Line thickness
-              ),
-              SizedBox(
-                width: MediaQuery.of(context).size.width, // Full screen width
-                height: 30, // Make it square
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Handle Account info button press
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => AccountInfoScreen()),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.transparent, width: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero, // No rounded corners
-                    ),
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Text('Account Info'),
-                ),
-              ),
-              Divider(
-                color: Colors.black, // Line color
-                thickness: 1, // Line thickness
-              ),
-              SizedBox(
-                width: MediaQuery.of(context).size.width, // Full screen width
-                height: 30, // Make it square
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Handle App info button press
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AppInfoScreen()),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.transparent, width: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero, // No rounded corners
-                    ),
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Text('App Info'),
-                ),
-              ),
-              Divider(
-                color: Colors.black, // Line color
-                thickness: 1, // Line thickness
-              ),
-              SizedBox(
-                width: MediaQuery.of(context).size.width, // Full screen width
-                height: 30, // Make it square
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Handle Log Out button press
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignInScreen()),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.transparent, width: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero, // No rounded corners
-                    ),
-                    padding: EdgeInsets.zero, // Full width, custom height
-                  ),
-                  child: Text('Log Out'),
-                ),
-              ),
-              Divider(
-                color: Colors.black, // Line color
-                thickness: 1, // Line thickness
-              ),
-            ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Divider(
+            color: Colors.black, // Line color
+            thickness: 1, // Line thickness
           ),
-        ),
+          SizedBox(
+            width: MediaQuery.of(context).size.width, // Full screen width
+            height: 30, // Make it square
+            child: OutlinedButton(
+              onPressed: () {
+                // Handle Account info button press
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AccountInfoScreen()),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.transparent, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero, // No rounded corners
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: Text('Account Info'),
+            ),
+          ),
+          Divider(
+            color: Colors.black, // Line color
+            thickness: 1, // Line thickness
+          ),
+          SizedBox(
+            width: MediaQuery.of(context).size.width, // Full screen width
+            height: 30, // Make it square
+            child: OutlinedButton(
+              onPressed: () {
+                // Handle App info button press
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AppInfoScreen()),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.transparent, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero, // No rounded corners
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: Text('App Info'),
+            ),
+          ),
+          Divider(
+            color: Colors.black, // Line color
+            thickness: 1, // Line thickness
+          ),
+          SizedBox(
+            width: MediaQuery.of(context).size.width, // Full screen width
+            height: 30, // Make it square
+            child: OutlinedButton(
+              onPressed: () {
+                // Handle Log Out button press
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SignInScreen()),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.transparent, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero, // No rounded corners
+                ),
+                padding: EdgeInsets.zero, // Full width, custom height
+              ),
+              child: Text('Log Out'),
+            ),
+          ),
+          Divider(
+            color: Colors.black, // Line color
+            thickness: 1, // Line thickness
+          ),
+        ],
       ),
     );
   }
@@ -600,10 +595,10 @@ class AccountInfoScreen extends StatelessWidget {
                       children: [
                         Text("Email:",
                             style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold)), // Left side
                         Text(user.email ?? "Not available",
-                            style: TextStyle(fontSize: 18)), // Right side
+                            style: TextStyle(fontSize: 13)), // Right side
                       ],
                     ),
                   ),
@@ -621,10 +616,10 @@ class AccountInfoScreen extends StatelessWidget {
                       children: [
                         Text("User ID:",
                             style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold)), // Left side
                         Text(user.uid,
-                            style: TextStyle(fontSize: 18)), // Right side
+                            style: TextStyle(fontSize: 13)), // Right side
                       ],
                     ),
                   ),
@@ -632,31 +627,6 @@ class AccountInfoScreen extends StatelessWidget {
                     color: Colors.black, // Line color
                     thickness: 1, // Line thickness
                   ),
-                  /*SizedBox(
-                width: MediaQuery.of(context).size.width, // Full screen width
-                height: 30, // Make it square
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Handle Log Out button press
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignInScreen()),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.transparent, width: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero, // No rounded corners
-                    ),
-                    padding: EdgeInsets.zero, // Full width, custom height
-                  ),
-                  child: Text('Log Out'),
-                ),
-              ),
-              Divider(
-                color: Colors.black, // Line color
-                thickness: 1, // Line thickness
-              ),*/
                 ],
               ))
             : Text("No user is logged in"),
@@ -674,6 +644,108 @@ class AppInfoScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('App Info'),
         centerTitle: true,
+      ),
+    );
+  }
+}
+
+class BluetoothScreen extends StatefulWidget {
+  @override
+  _BluetoothScreenState createState() => _BluetoothScreenState();
+}
+
+class _BluetoothScreenState extends State<BluetoothScreen> {
+  FlutterBlue flutterBlue = FlutterBlue.instance;
+
+  // List to store the scanned devices
+  List<BluetoothDevice> devicesList = [];
+
+  // Connect to a device
+  BluetoothDevice? connectedDevice;
+
+  @override
+  void initState() {
+    super.initState();
+    startScan();
+  }
+
+  // Start scanning for nearby BLE devices
+  void startScan() {
+    flutterBlue.scan(timeout: Duration(seconds: 4)).listen((scanResult) {
+      setState(() {
+        devicesList.add(scanResult.device);
+      });
+    });
+  }
+
+  // Stop scanning for BLE devices
+  void stopScan() {
+    flutterBlue.stopScan();
+  }
+
+  // Connect to a device and discover services
+  void connectToDevice(BluetoothDevice device) async {
+    await device.connect();
+    setState(() {
+      connectedDevice = device;
+    });
+
+    // Discover services
+    List<BluetoothService> services = await device.discoverServices();
+    services.forEach((service) {
+      print("Service: ${service.uuid}");
+      service.characteristics.forEach((characteristic) {
+        print("Characteristic: ${characteristic.uuid}");
+      });
+    });
+  }
+
+  // Read a characteristic's value
+  void readCharacteristic(BluetoothCharacteristic characteristic) async {
+    List<int> value = await characteristic.read();
+    print("Read value: $value");
+  }
+
+  // Write to a characteristic
+  void writeCharacteristic(
+      BluetoothCharacteristic characteristic, List<int> value) async {
+    await characteristic.write(value);
+    print("Wrote value: $value");
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Flutter BLE Demo")),
+      body: Column(
+        children: [
+          ElevatedButton(
+            onPressed: startScan,
+            child: Text("Start Scanning"),
+          ),
+          Divider(
+            color: Colors.transparent, // Line color
+            thickness: 1, // Line thickness
+          ),
+          ElevatedButton(
+            onPressed: stopScan,
+            child: Text("Stop Scanning"),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: devicesList.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(devicesList[index].name),
+                  subtitle: Text(devicesList[index].id.toString()),
+                  onTap: () {
+                    connectToDevice(devicesList[index]);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
