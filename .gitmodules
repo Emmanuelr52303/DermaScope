@@ -1,0 +1,3 @@
+[submodule "DermaScope/btstack"]
+	path = DermaScope/btstack
+	url = https://github.com/bluekitchen/btstack.git

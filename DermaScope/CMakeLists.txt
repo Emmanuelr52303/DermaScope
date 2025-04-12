@@ -45,7 +45,18 @@ pico_sdk_init()
 
 add_executable(DermaScope DermaScope.cpp )
 add_subdirectory(tinyusb/src)
-add_subdirectory(btstack/port/libusb)
+# Gather all btstack source files
+file(GLOB_RECURSE BTSTACK_SRC btstack/src/*.c)
+
+# Add the btstack files to your executable
+target_sources(DermaScope PRIVATE ${BTSTACK_SRC})
+
+# Add btstack include directories
+target_include_directories(DermaScope PRIVATE
+    btstack/src
+    btstack/include
+)
+
 
 pico_set_program_name(DermaScope "DermaScope")
 pico_set_program_version(DermaScope "0.1")
