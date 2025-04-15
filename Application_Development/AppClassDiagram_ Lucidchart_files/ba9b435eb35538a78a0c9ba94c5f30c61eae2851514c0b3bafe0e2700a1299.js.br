@@ -1,2 +1,0 @@
-function Uc$R(a,b,c){UcPtk(a.aia,c,[b]);if(a.KUe.value)throw Error("A lazy component token may not register multiple components");a.vdg.resolve({component:b,kqb:c})};
-//# sourceURL=/js/application/universalcanvas_app/chunk/gen_7f7bc000c00100a018000000000000200000000000000000000000000000000000000000.js?compiled=1

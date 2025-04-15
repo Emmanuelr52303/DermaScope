@@ -1,6 +1,0 @@
-i18n.setData(
-    JSON.parse(
-        "{\"ai-collaborative-ai-name-v2\":\"Collaborative AI\",\"feature-beta-uppercase\":\"BETA\"}"
-    ),
-    'en'
-);
