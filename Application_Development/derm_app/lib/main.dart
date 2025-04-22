@@ -331,7 +331,6 @@ class WelcomeScreen extends StatelessWidget {
                 title: Text('Tutorial'),
                 onTap: () {
                   Navigator.pop(context); // Close the drawer
-                  // Navigate to tutorial
                 },
               ),
               ListTile(
@@ -384,14 +383,10 @@ class WelcomeScreen extends StatelessWidget {
             ),
             SizedBox(height: 40),
             ElevatedButton(
-              onPressed: () {
-                // Navigate to the Learn Screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => WifiScreen()),
-                );
-              },
-              child: Text('Connect to Device'),
+              onPressed: () =>
+                  // Navigate to dermascop connectivity screen
+                  showWifiCheckModal(context),
+              child: Text('Image Capture'),
             ),
           ],
         ),
@@ -654,12 +649,21 @@ class AppInfoScreen extends StatelessWidget {
   }
 }
 
-class WifiScreen extends StatefulWidget {
-  @override
-  _WifiScreenState createState() => _WifiScreenState();
+void showWifiCheckModal(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => WifiCheckContent(),
+  );
 }
 
-class _WifiScreenState extends State<WifiScreen> {
+class WifiCheckContent extends StatefulWidget {
+  @override
+  _WifiCheckContentState createState() => _WifiCheckContentState();
+}
+
+class _WifiCheckContentState extends State<WifiCheckContent> {
+  bool isChecking = true;
   bool isConnectedToPico = false;
   bool isPolling = false;
   Timer? pollTimer;
@@ -672,7 +676,7 @@ class _WifiScreenState extends State<WifiScreen> {
   void initState() {
     super.initState();
     requestPermissions();
-    checkWifiConnection();
+    checkConnection();
   }
 
   Future<void> requestPermissions() async {
@@ -682,33 +686,37 @@ class _WifiScreenState extends State<WifiScreen> {
     }
   }
 
-  Future<void> checkWifiConnection() async {
-    try {
-      var connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.wifi) {
-        final ssid = await WifiInfo().getWifiName(); // Gets SSID
+  Future<void> checkConnection() async {
+    setState(() {
+      isChecking = true;
+    });
 
-        print("Connected SSID: $ssid");
+    final connectivity = Connectivity();
+    final result = await connectivity.checkConnectivity();
 
-        if (ssid != null && ssid.contains("DermaScope")) {
-          setState(() {
-            isConnectedToPico = true;
-          });
-        } else {
-          setState(() {
-            isConnectedToPico = false;
-          });
-        }
+    if (result == ConnectivityResult.wifi) {
+      print("Connected to Wi-Fi.");
+      final wifiInfo = await WifiInfo().getWifiName();
+      print("Current Wi-Fi: $wifiInfo");
+
+      // Check if the device is connected to the correct Wi-Fi network
+      if (wifiInfo?.contains('Dermascope') == true) {
+        setState(() {
+          isConnectedToPico = true;
+          isChecking = false;
+        });
+        print("Connected to Pico's Wi-Fi!");
       } else {
         setState(() {
-          isConnectedToPico = false;
+          isChecking = false;
         });
+        print("Not connected to DermaScope Wi-Fi.");
       }
-    } catch (e) {
-      print("Error checking SSID: $e");
+    } else {
       setState(() {
-        isConnectedToPico = false;
+        isChecking = false;
       });
+      print("No Wi-Fi connection.");
     }
   }
 
@@ -753,38 +761,43 @@ class _WifiScreenState extends State<WifiScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Connect to Pico'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Text(
-                isConnectedToPico
-                    ? "Connected to Pico"
-                    : "Not connected to Pico Wi-Fi",
-                style: TextStyle(fontSize: 18),
-              ),
-              SizedBox(height: 20),
-              if (!isPolling)
-                ElevatedButton(
-                  onPressed: isConnectedToPico ? startPollingForImage : null,
-                  child: Text("Start Receiving Image"),
-                )
-              else
-                ElevatedButton(
-                  onPressed: stopPolling,
-                  child: Text("Cancel"),
-                ),
-              SizedBox(height: 20),
-              if (imageData != null) Image.memory(imageData!),
-            ],
-          ),
+    if (isChecking) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (isConnectedToPico) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Connected to DermaScope!", style: TextStyle(fontSize: 18)),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: isConnectedToPico ? startPollingForImage : null,
+              child: Text("Start Image Capture"),
+            ),
+          ],
         ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text("Please connect to 'DermaScope' Wi-Fi network",
+              style: TextStyle(fontSize: 18)),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Close"),
+          ),
+        ],
       ),
     );
   }
