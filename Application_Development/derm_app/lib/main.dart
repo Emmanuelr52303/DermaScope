@@ -1,8 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'dart:typed_data';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
+import 'package:http/http.dart' as http;
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:wifi_info_flutter/wifi_info_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -653,4 +659,133 @@ class WifiScreen extends StatefulWidget {
   _WifiScreenState createState() => _WifiScreenState();
 }
 
-class _WifiScreenState extends State<WifiScreen> {}
+class _WifiScreenState extends State<WifiScreen> {
+  bool isConnectedToPico = false;
+  bool isPolling = false;
+  Timer? pollTimer;
+  Uint8List? imageData;
+
+  final String picoIp = "192.168.4.1"; // Pico's default IP in AP mode
+  final Duration pollingInterval = Duration(seconds: 1);
+
+  @override
+  void initState() {
+    super.initState();
+    requestPermissions();
+    checkWifiConnection();
+  }
+
+  Future<void> requestPermissions() async {
+    var status = await Permission.location.status;
+    if (!status.isGranted) {
+      await Permission.location.request();
+    }
+  }
+
+  Future<void> checkWifiConnection() async {
+    try {
+      var connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.wifi) {
+        final ssid = await WifiInfo().getWifiName(); // Gets SSID
+
+        print("Connected SSID: $ssid");
+
+        if (ssid != null && ssid.contains("DermaScope")) {
+          setState(() {
+            isConnectedToPico = true;
+          });
+        } else {
+          setState(() {
+            isConnectedToPico = false;
+          });
+        }
+      } else {
+        setState(() {
+          isConnectedToPico = false;
+        });
+      }
+    } catch (e) {
+      print("Error checking SSID: $e");
+      setState(() {
+        isConnectedToPico = false;
+      });
+    }
+  }
+
+  void startPollingForImage() {
+    setState(() {
+      isPolling = true;
+    });
+
+    pollTimer = Timer.periodic(pollingInterval, (timer) async {
+      print("Checking for image...");
+      final url = Uri.parse("http://$picoIp/image.bin");
+
+      try {
+        final response = await http.get(url);
+
+        if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+          print("Image received!");
+          setState(() {
+            imageData = response.bodyBytes;
+            isPolling = false;
+          });
+          pollTimer?.cancel();
+        }
+      } catch (e) {
+        print("Error polling: $e");
+      }
+    });
+  }
+
+  void stopPolling() {
+    pollTimer?.cancel();
+    setState(() {
+      isPolling = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    pollTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Connect to Pico'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Text(
+                isConnectedToPico
+                    ? "Connected to Pico"
+                    : "Not connected to Pico Wi-Fi",
+                style: TextStyle(fontSize: 18),
+              ),
+              SizedBox(height: 20),
+              if (!isPolling)
+                ElevatedButton(
+                  onPressed: isConnectedToPico ? startPollingForImage : null,
+                  child: Text("Start Receiving Image"),
+                )
+              else
+                ElevatedButton(
+                  onPressed: stopPolling,
+                  child: Text("Cancel"),
+                ),
+              SizedBox(height: 20),
+              if (imageData != null) Image.memory(imageData!),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
