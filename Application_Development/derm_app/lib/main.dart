@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
-import 'package:flutter_blue/flutter_blue.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -383,7 +382,7 @@ class WelcomeScreen extends StatelessWidget {
                 // Navigate to the Learn Screen
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => BluetoothScreen()),
+                  MaterialPageRoute(builder: (context) => WifiScreen()),
                 );
               },
               child: Text('Connect to Device'),
@@ -649,104 +648,9 @@ class AppInfoScreen extends StatelessWidget {
   }
 }
 
-class BluetoothScreen extends StatefulWidget {
+class WifiScreen extends StatefulWidget {
   @override
-  _BluetoothScreenState createState() => _BluetoothScreenState();
+  _WifiScreenState createState() => _WifiScreenState();
 }
 
-class _BluetoothScreenState extends State<BluetoothScreen> {
-  FlutterBlue flutterBlue = FlutterBlue.instance;
-
-  // List to store the scanned devices
-  List<BluetoothDevice> devicesList = [];
-
-  // Connect to a device
-  BluetoothDevice? connectedDevice;
-
-  @override
-  void initState() {
-    super.initState();
-    startScan();
-  }
-
-  // Start scanning for nearby BLE devices
-  void startScan() {
-    flutterBlue.scan(timeout: Duration(seconds: 4)).listen((scanResult) {
-      setState(() {
-        devicesList.add(scanResult.device);
-      });
-    });
-  }
-
-  // Stop scanning for BLE devices
-  void stopScan() {
-    flutterBlue.stopScan();
-  }
-
-  // Connect to a device and discover services
-  void connectToDevice(BluetoothDevice device) async {
-    await device.connect();
-    setState(() {
-      connectedDevice = device;
-    });
-
-    // Discover services
-    List<BluetoothService> services = await device.discoverServices();
-    services.forEach((service) {
-      print("Service: ${service.uuid}");
-      service.characteristics.forEach((characteristic) {
-        print("Characteristic: ${characteristic.uuid}");
-      });
-    });
-  }
-
-  // Read a characteristic's value
-  void readCharacteristic(BluetoothCharacteristic characteristic) async {
-    List<int> value = await characteristic.read();
-    print("Read value: $value");
-  }
-
-  // Write to a characteristic
-  void writeCharacteristic(
-      BluetoothCharacteristic characteristic, List<int> value) async {
-    await characteristic.write(value);
-    print("Wrote value: $value");
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Flutter BLE Demo")),
-      body: Column(
-        children: [
-          ElevatedButton(
-            onPressed: startScan,
-            child: Text("Start Scanning"),
-          ),
-          Divider(
-            color: Colors.transparent, // Line color
-            thickness: 1, // Line thickness
-          ),
-          ElevatedButton(
-            onPressed: stopScan,
-            child: Text("Stop Scanning"),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: devicesList.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(devicesList[index].name),
-                  subtitle: Text(devicesList[index].id.toString()),
-                  onTap: () {
-                    connectToDevice(devicesList[index]);
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+class _WifiScreenState extends State<WifiScreen> {}
