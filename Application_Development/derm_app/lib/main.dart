@@ -6,9 +6,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'package:http/http.dart' as http;
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:wifi_info_flutter/wifi_info_flutter.dart';
-import 'package:permission_handler/permission_handler.dart';
+//import 'package:connectivity_plus/connectivity_plus.dart';
+//import 'package:network_info_plus/network_info_plus.dart';
+//import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -658,14 +660,17 @@ void showWifiCheckModal(BuildContext context) {
 }
 
 class WifiCheckContent extends StatefulWidget {
+  const WifiCheckContent({super.key});
+
   @override
   _WifiCheckContentState createState() => _WifiCheckContentState();
 }
 
 class _WifiCheckContentState extends State<WifiCheckContent> {
-  bool isChecking = true;
-  bool isConnectedToPico = false;
+  bool isChecking = false;
+  bool isConnectedToPico = true;
   bool isPolling = false;
+  bool isConnected = false;
   Timer? pollTimer;
   Uint8List? imageData;
 
@@ -675,11 +680,11 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
   @override
   void initState() {
     super.initState();
-    requestPermissions();
-    checkConnection();
+    // requestPermissions();
+    // checkConnection();
   }
 
-  Future<void> requestPermissions() async {
+  /*Future<void> requestPermissions() async {
     var status = await Permission.location.status;
     if (!status.isGranted) {
       await Permission.location.request();
@@ -696,11 +701,13 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
 
     if (result == ConnectivityResult.wifi) {
       print("Connected to Wi-Fi.");
-      final wifiInfo = await WifiInfo().getWifiName();
-      print("Current Wi-Fi: $wifiInfo");
 
-      // Check if the device is connected to the correct Wi-Fi network
-      if (wifiInfo?.contains('Dermascope') == true) {
+      final info = NetworkInfo();
+      final wifiName = await info.getWifiName(); // SSID
+
+      debugPrint("Current Wi-Fi: $wifiName");
+
+      if (wifiName?.contains('DermaScope') == true) {
         setState(() {
           isConnectedToPico = true;
           isChecking = false;
@@ -709,6 +716,7 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
       } else {
         setState(() {
           isChecking = false;
+          isConnected = true;
         });
         print("Not connected to DermaScope Wi-Fi.");
       }
@@ -718,6 +726,18 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
       });
       print("No Wi-Fi connection.");
     }
+  }*/
+
+  Future<void> saveImage(Uint8List imageBytes) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final imagePath =
+        '${directory.path}/captured_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final imageFile = File(imagePath);
+
+    await imageFile.writeAsBytes(imageBytes);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Image saved to: $imagePath')),
+    );
   }
 
   void startPollingForImage() {
@@ -768,17 +788,47 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
       );
     }
 
-    if (isConnectedToPico) {
+    //   if (isConnectedToPico) {
+    if (isPolling) {
       return Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Connected to DermaScope!", style: TextStyle(fontSize: 18)),
+            Text("Capturing Image...", style: TextStyle(fontSize: 18)),
+            SizedBox(height: 20),
+            CircularProgressIndicator(),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: isConnectedToPico ? startPollingForImage : null,
-              child: Text("Start Image Capture"),
+              onPressed: stopPolling,
+              child: Text("Stop Capture"),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (imageData != null) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Captured Image:", style: TextStyle(fontSize: 18)),
+            SizedBox(height: 20),
+            Image.memory(
+              imageData!,
+              fit: BoxFit.contain,
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => saveImage(imageData!),
+              child: Text("Save Image"),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: startPollingForImage,
+              child: Text("Capture Another"),
             ),
           ],
         ),
@@ -790,8 +840,40 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text("Please connect to 'DermaScope' Wi-Fi network",
-              style: TextStyle(fontSize: 18)),
+          Text("Connected to DermaScope!", style: TextStyle(fontSize: 18)),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: isConnectedToPico ? startPollingForImage : null,
+            child: Text("Start Image Capture"),
+          ),
+        ],
+      ),
+    );
+//    }
+
+/*    if (isConnected) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Please connect to 'DermaScope' Wi-Fi network",
+                style: TextStyle(fontSize: 18)),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Close"),
+            ),
+          ],
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text("No Wifi network", style: TextStyle(fontSize: 18)),
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
@@ -799,6 +881,6 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
           ),
         ],
       ),
-    );
+    );*/
   }
 }

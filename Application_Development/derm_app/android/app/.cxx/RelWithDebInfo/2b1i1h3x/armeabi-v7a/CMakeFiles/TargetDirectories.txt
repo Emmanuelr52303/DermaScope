@@ -1,0 +1,2 @@
+C:/Users/Juanm/Documents/Senior Design/DermoLight/Application_Development/derm_app/android/app/.cxx/RelWithDebInfo/2b1i1h3x/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Juanm/Documents/Senior Design/DermoLight/Application_Development/derm_app/android/app/.cxx/RelWithDebInfo/2b1i1h3x/armeabi-v7a/CMakeFiles/rebuild_cache.dir
