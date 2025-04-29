@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
-import 'package:http/http.dart' as http;
 //import 'package:connectivity_plus/connectivity_plus.dart';
 //import 'package:network_info_plus/network_info_plus.dart';
 //import 'package:permission_handler/permission_handler.dart';
@@ -671,10 +670,14 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
   bool isConnectedToPico = true;
   bool isPolling = false;
   bool isConnected = false;
+  bool isReceiving = true;
   Timer? pollTimer;
   Uint8List? imageData;
+  late Socket _socket;
+  List<int> imageBytes = [];
+  String picoIp = "192.168.4.1"; // Pico IP
+  int picoPort = 4242;
 
-  final String picoIp = "192.168.4.1"; // Pico's default IP in AP mode
   final Duration pollingInterval = Duration(seconds: 1);
 
   @override
@@ -740,30 +743,55 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
     );
   }
 
-  void startPollingForImage() {
+  void startPollingForImage() async {
     setState(() {
       isPolling = true;
+      imageBytes = [];
+      imageData = null;
     });
 
-    pollTimer = Timer.periodic(pollingInterval, (timer) async {
-      print("Checking for image...");
-      final url = Uri.parse("http://$picoIp/image.bin");
+    print("Connecting to Pico TCP server...");
+    try {
+      _socket = await Socket.connect(picoIp, picoPort);
+      print("Connected to Pico!");
+      setState(() {
+        isConnected = true;
+      });
 
-      try {
-        final response = await http.get(url);
+      int? expectedImageSize;
+      List<int> buffer = [];
 
-        if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
-          print("Image received!");
-          setState(() {
-            imageData = response.bodyBytes;
-            isPolling = false;
-          });
-          pollTimer?.cancel();
+      _socket.listen((List<int> event) {
+        buffer.addAll(event);
+
+        if (expectedImageSize == null && buffer.length >= 4) {
+          // Extract the first 4 bytes as the image size
+          expectedImageSize =
+              ByteData.sublistView(Uint8List.fromList(buffer.sublist(0, 4)))
+                  .getUint32(0, Endian.big);
+          print("Expected image size: $expectedImageSize bytes");
+
+          // Remove those 4 bytes from buffer so only image data remains
+          buffer = buffer.sublist(4);
         }
-      } catch (e) {
-        print("Error polling: $e");
-      }
-    });
+
+        if (expectedImageSize != null) {
+          imageBytes.addAll(buffer);
+          buffer.clear();
+
+          if (imageBytes.length >= expectedImageSize!) {
+            print("Full image received: ${imageBytes.length} bytes");
+            _socket.close();
+            setState(() {
+              imageData = Uint8List.fromList(imageBytes);
+              isReceiving = false;
+            });
+          }
+        }
+      });
+    } catch (e) {
+      print("Error connecting to Pico: $e");
+    }
   }
 
   void stopPolling() {
