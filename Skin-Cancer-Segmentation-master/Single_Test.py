@@ -8,13 +8,11 @@ Created on Wed Mar  5 20:31:13 2025
 import os
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 from Mask.config import Config
 import Mask.model as modellib
-import Mask.visualize as visualize
 
 # Set paths for the trained model
-MODEL_PATH = r"C:\Users\dipen\Documents\St.Marys\Super_Senior\Senior_Design\MachineLearning\Skin-Cancer-Segmentation-master\models\moles20250228T2328\mask_rcnn_moles_0090.h5"  # Update this with your actual model path
+MODEL_PATH = r"C:\Users\dipen\Documents\St.Marys\Super_Senior\Senior_Design\MachineLearning\Skin-Cancer-Segmentation-master\models\moles20250228T2328\mask_rcnn_moles_0090.h5"
 
 # Verify if model exists
 if not os.path.exists(MODEL_PATH):
@@ -42,6 +40,7 @@ model.load_weights(MODEL_PATH, by_name=True)
 def classify_image(image_path):
     """
     Function to classify a mole image using the pre-trained model.
+    Only prints classification result (no image output).
     """
     if not os.path.exists(image_path):
         print(f"❌ Image not found at {image_path}")
@@ -53,10 +52,10 @@ def classify_image(image_path):
         print(f"❌ Could not read image {image_path}")
         return
     
-    # Convert BGR to RGB (since OpenCV loads images in BGR format)
+    # Convert BGR to RGB (OpenCV loads as BGR)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
-    # Resize image to match model requirements
+    # Resize image
     img_resized = cv2.resize(img, (128, 128))
 
     # Predict using the model
@@ -74,9 +73,6 @@ def classify_image(image_path):
     
     print(f"🎯 Classification Result: {predicted_labels}")
 
-    # Visualize results
-    visualize.display_instances(img_resized, results['rois'], results['masks'], results['class_ids'], class_names, results['scores'])
-
-# Example Usage: Change to your image path
+# Example Usage
 image_path = r"C:\Users\dipen\Documents\St.Marys\Super_Senior\Senior_Design\MachineLearning\Skin-Cancer-Segmentation-master\ISIC-Archive-Downloader-2017\Data\Test\Single\IMG_9420.jpeg"
 classify_image(image_path)
