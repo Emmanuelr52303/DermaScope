@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <string.h>
-#include "stdlib.h"
+#include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "hardware/i2c.h"
 #include "pico/cyw43_arch.h"
 #include "lwip/tcp.h"
+#include "lwip/init.h"
 
 
 // ==== Pin definitions ====
@@ -130,12 +131,14 @@ void setup_button() {
 
 // ==== Main Entry Point ====
 int main() {
+    stdio_init_all();
+
     if (cyw43_arch_init()) {
         printf("Wi-Fi init failed\n");
         return -1;
     }
 
-    cyw43_arch_enable_ap_mode("DermaScope", "password123", CYW43_AUTH_OPEN);
+    cyw43_arch_enable_ap_mode("DermaScope", "password123", CYW43_AUTH_WPA2_AES_PSK);
     printf("Access Point started. Connect to 'DermaScope'.\n");
 
     init_i2c();
