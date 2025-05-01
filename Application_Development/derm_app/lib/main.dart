@@ -10,6 +10,8 @@ import 'firebase_options.dart';
 //import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:image/image.dart' as img;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -671,12 +673,15 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
   bool isPolling = false;
   bool isConnected = false;
   bool isReceiving = true;
+  bool isClassified = false;
   Timer? pollTimer;
   Uint8List? imageData;
   late Socket _socket;
   List<int> imageBytes = [];
   String picoIp = "192.168.4.1"; // Pico IP
   int picoPort = 4242;
+  String classification = '';
+  double confidence = 0;
 
   final Duration pollingInterval = Duration(seconds: 1);
 
@@ -731,18 +736,6 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
     }
   }*/
 
-  Future<void> saveImage(Uint8List imageBytes) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final imagePath =
-        '${directory.path}/captured_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final imageFile = File(imagePath);
-
-    await imageFile.writeAsBytes(imageBytes);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Image saved to: $imagePath')),
-    );
-  }
-
   void startPollingForImage() async {
     setState(() {
       isPolling = true;
@@ -777,6 +770,8 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
 
         if (expectedImageSize != null) {
           imageBytes.addAll(buffer);
+          print(
+              "Received so far: ${imageBytes.length} / $expectedImageSize bytes");
           buffer.clear();
 
           if (imageBytes.length >= expectedImageSize!) {
@@ -785,6 +780,7 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
             setState(() {
               imageData = Uint8List.fromList(imageBytes);
               isReceiving = false;
+              stopPolling();
             });
           }
         }
@@ -799,6 +795,47 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
     setState(() {
       isPolling = false;
     });
+  }
+
+  Future<void> saveImage(Uint8List imageBytes) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final imagePath =
+        '${directory.path}/captured_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final imageFile = File(imagePath);
+
+    await imageFile.writeAsBytes(imageBytes);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Image saved to: $imagePath')),
+    );
+    classifySavedImage(imagePath);
+  }
+
+  Future<void> classifySavedImage(String imagePath) async {
+    final classifier = SkinClassifier();
+    await classifier.loadModel();
+
+    final imageFile = File(imagePath);
+    final imageBytes = await imageFile.readAsBytes();
+
+    // Run inference and get output scores
+    final output = await classifier.runInference(imageBytes);
+    final prob = output.reduce((a, b) => a > b ? a : b);
+    final index = output.indexOf(prob);
+
+    // Label logic based on your Python script
+    String label;
+    if (index == 1 && prob < 0.9) {
+      label = "neither";
+    } else if (prob < 0.6) {
+      label = "neither";
+    } else {
+      label = ["benign", "malignant"][index];
+    }
+
+    print("🔍 Prediction: $label");
+    print("📊 Confidence: ${(prob * 100).toStringAsFixed(2)}%");
+    classification = label;
+    confidence = prob * 100;
   }
 
   @override
@@ -851,13 +888,90 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => saveImage(imageData!),
-              child: Text("Save Image"),
+              child: Text("Get Results"),
             ),
             SizedBox(height: 10),
             ElevatedButton(
               onPressed: startPollingForImage,
               child: Text("Capture Another"),
             ),
+          ],
+        ),
+      );
+    }
+
+    if (isClassified) {
+      if (classification == 'benign') {
+        if (confidence > 85) {
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "No Concern:",
+                  style: TextStyle(fontSize: 18, color: Colors.green),
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
+          );
+        } else {
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Low Concern:",
+                  style: TextStyle(fontSize: 18, color: Colors.yellow),
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
+          );
+        }
+      }
+      if (classification == 'malignent') {
+        if (confidence > 85) {
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "High Concern:",
+                  style: TextStyle(fontSize: 18, color: Colors.red),
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Medium Concern:",
+                style: TextStyle(fontSize: 18, color: Colors.orange),
+              ),
+              SizedBox(height: 20),
+            ],
+          ),
+        );
+      }
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Could not read Image",
+              style: TextStyle(fontSize: 18),
+            ),
+            SizedBox(height: 20),
           ],
         ),
       );
@@ -910,5 +1024,49 @@ class _WifiCheckContentState extends State<WifiCheckContent> {
         ],
       ),
     );*/
+  }
+}
+
+class SkinClassifier {
+  late Interpreter _interpreter;
+
+  Future<void> loadModel() async {
+    try {
+      _interpreter = await Interpreter.fromAsset('model.tflite');
+      print('✅ Model loaded');
+    } catch (e) {
+      print('❌ Failed to load model: $e');
+    }
+  }
+
+  Future<List<double>> runInference(Uint8List jpegBytes) async {
+    // Decode JPEG and resize to 224x224
+    final image = img.decodeImage(jpegBytes);
+    if (image == null) throw Exception("❌ Failed to decode image");
+
+    final resized = img.copyResize(image, width: 224, height: 224);
+
+    // Normalize and convert to input tensor
+    final input = List.generate(
+        224,
+        (y) => List.generate(
+            224,
+            (x) => List.generate(
+                3, (c) => resized.getPixel(x, y).toDoubleChannel(c) / 255.0)));
+
+    final inputTensor = [input];
+
+    final output = List.filled(2, 0.0).reshape([1, 2]);
+    _interpreter.run(inputTensor, output);
+
+    return output[0]; // [benign_prob, malignant_prob]
+  }
+}
+
+extension on int {
+  double toDoubleChannel(int channel) {
+    if (channel == 0) return ((this >> 16) & 0xFF).toDouble(); // R
+    if (channel == 1) return ((this >> 8) & 0xFF).toDouble(); // G
+    return (this & 0xFF).toDouble(); // B
   }
 }
